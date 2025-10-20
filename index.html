@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IBH • Comercial (Leads / Consultas / Vendas)</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for dashboard -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Pequenos refinamentos */
+    .card{ @apply bg-white rounded-2xl shadow p-5; }
+    .btn{ @apply px-4 py-2 rounded-xl shadow text-sm font-medium; }
+    .btn-primary{ @apply bg-black text-white hover:opacity-90; }
+    .btn-ghost{ @apply bg-gray-100 hover:bg-gray-200; }
+    .pill{ @apply text-xs px-2 py-0.5 rounded-full bg-gray-100; }
+    .req::after{ content:" *"; color:#dc2626; }
+    .table thead th{ @apply text-left text-xs font-semibold text-gray-500; }
+    .table tbody td{ @apply text-sm text-gray-800; }
+    .danger{ @apply text-red-600; }
+    .ok{ @apply text-emerald-700; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-10">
+    <header class="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold">Instituto Be Healthy — Comercial</h1>
+        <p class="text-gray-600 text-sm">App leve em HTML + JS. Salva localmente (localStorage). Exporta/importa CSV/JSON. Embed via <code>&lt;iframe&gt;</code>.</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnExportJSON" class="btn btn-ghost">Exportar JSON</button>
+        <button id="btnExportCSV" class="btn btn-ghost">Exportar CSV</button>
+        <label class="btn btn-primary cursor-pointer">
+          Importar JSON/CSV
+          <input id="fileImport" type="file" accept=".json,.csv" class="hidden" />
+        </label>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <nav class="mb-6 flex flex-wrap gap-2">
+      <button data-tab="leads" class="tab btn btn-primary">Leads</button>
+      <button data-tab="consultas" class="tab btn btn-ghost">Consultas</button>
+      <button data-tab="vendas" class="tab btn btn-ghost">Vendas</button>
+      <button data-tab="dashboard" class="tab btn btn-ghost">Dashboard</button>
+      <button data-tab="config" class="tab btn btn-ghost">Config</button>
+    </nav>
+
+    <!-- Leads -->
+    <section id="tab-leads" class="tab-pane">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-4">Novo Lead</h2>
+          <form id="formLead" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="req text-sm">Data de entrada</label>
+              <input name="dataEntrada" type="date" class="w-full mt-1 p-2 rounded-lg border" required />
+            </div>
+            <div>
+              <label class="req text-sm">Nome do lead</label>
+              <input name="nome" type="text" class="w-full mt-1 p-2 rounded-lg border" required />
+            </div>
+            <div>
+              <label class="req text-sm">Cidade / Unidade</label>
+              <select name="cidade" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Alfenas</option>
+                <option>Poços de Caldas</option>
+              </select>
+            </div>
+            <div>
+              <label class="req text-sm">Canal de entrada</label>
+              <select name="canal" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Instagram Ads</option>
+                <option>Google Ads</option>
+                <option>Indicação</option>
+                <option>Orgânico</option>
+                <option>Outros</option>
+              </select>
+            </div>
+            <div>
+              <label class="req text-sm">Nível de interesse</label>
+              <select name="nivel" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Nível 1 - Curioso</option>
+                <option>Nível 2 - Dúvidas</option>
+                <option>Nível 3 - Ciente da Solução</option>
+              </select>
+            </div>
+            <div>
+              <label class="req text-sm">Responsável</label>
+              <select name="responsavel" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Fabiana</option>
+                <option>CS</option>
+                <option>Dr. Felipe</option>
+                <option>Dr. João Fábio</option>
+                <option>Dra. Rhaphaella</option>
+              </select>
+            </div>
+            <div>
+              <label class="req text-sm">Status</label>
+              <select name="status" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Novo</option>
+                <option>Em contato</option>
+                <option>Agendado</option>
+                <option>Perdido</option>
+                <option>Fechado</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-sm">Observações</label>
+              <textarea name="obs" class="w-full mt-1 p-2 rounded-lg border" rows="2"></textarea>
+            </div>
+            <div class="md:col-span-2 flex gap-2">
+              <button class="btn btn-primary" type="submit">Salvar lead</button>
+              <button class="btn btn-ghost" type="reset">Limpar</button>
+              <p id="leadMsg" class="text-sm ml-2"></p>
+            </div>
+          </form>
+        </div>
+        <div class="card overflow-x-auto">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xl font-semibold">Leads cadastrados</h2>
+            <input id="leadSearch" placeholder="Buscar…" class="p-2 rounded-lg border text-sm" />
+          </div>
+          <table class="table w-full">
+            <thead>
+              <tr>
+                <th>Data</th><th>Nome</th><th>Cidade</th><th>Canal</th><th>Nível</th><th>Resp.</th><th>Status</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="leadTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Consultas -->
+    <section id="tab-consultas" class="tab-pane hidden">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-4">Nova Consulta</h2>
+          <form id="formConsulta" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="req text-sm">Data do agendamento</label>
+              <input name="dataAgendamento" type="date" class="w-full mt-1 p-2 rounded-lg border" required />
+            </div>
+            <div>
+              <label class="req text-sm">Data da consulta</label>
+              <input name="dataConsulta" type="date" class="w-full mt-1 p-2 rounded-lg border" required />
+            </div>
+            <div>
+              <label class="req text-sm">Médico responsável</label>
+              <select name="medico" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Dr. Felipe</option>
+                <option>Dr. João Fábio</option>
+                <option>Dra. Rhaphaella</option>
+              </select>
+            </div>
+            <div>
+              <label class="req text-sm">Status da consulta</label>
+              <select name="status" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Confirmada</option>
+                <option>Compareceu</option>
+                <option>Não compareceu</option>
+                <option>Remarcada</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm">Motivo do não comparecimento</label>
+              <select name="motivo" class="w-full mt-1 p-2 rounded-lg border">
+                <option value="">—</option>
+                <option>Falta de tempo</option>
+                <option>Valor</option>
+                <option>Indecisão</option>
+                <option>Outros</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm">Valor estimado do protocolo (R$)</label>
+              <input name="valorEstimado" type="number" min="0" step="0.01" class="w-full mt-1 p-2 rounded-lg border" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-sm">Observações</label>
+              <textarea name="obs" class="w-full mt-1 p-2 rounded-lg border" rows="2"></textarea>
+            </div>
+            <div class="md:col-span-2 flex gap-2">
+              <button class="btn btn-primary" type="submit">Salvar consulta</button>
+              <button class="btn btn-ghost" type="reset">Limpar</button>
+              <p id="consultaMsg" class="text-sm ml-2"></p>
+            </div>
+          </form>
+        </div>
+        <div class="card overflow-x-auto">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xl font-semibold">Consultas</h2>
+            <input id="consultaSearch" placeholder="Buscar…" class="p-2 rounded-lg border text-sm" />
+          </div>
+          <table class="table w-full">
+            <thead>
+              <tr>
+                <th>Agend.</th><th>Consulta</th><th>Médico</th><th>Status</th><th>Motivo</th><th>Estimado</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="consultaTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Vendas -->
+    <section id="tab-vendas" class="tab-pane hidden">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-4">Nova Venda / Proposta</h2>
+          <form id="formVenda" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="req text-sm">Data da proposta</label>
+              <input name="dataProposta" type="date" class="w-full mt-1 p-2 rounded-lg border" required />
+            </div>
+            <div>
+              <label class="text-sm">Data do fechamento</label>
+              <input name="dataFechamento" type="date" class="w-full mt-1 p-2 rounded-lg border" />
+            </div>
+            <div>
+              <label class="req text-sm">Responsável</label>
+              <select name="responsavel" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Fabiana</option>
+                <option>CS</option>
+                <option>Dr. Felipe</option>
+                <option>Dr. João Fábio</option>
+                <option>Dra. Rhaphaella</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm">Valor da proposta (R$)</label>
+              <input name="valorProposta" type="number" min="0" step="0.01" class="w-full mt-1 p-2 rounded-lg border" />
+            </div>
+            <div>
+              <label class="text-sm">Valor fechado (R$)</label>
+              <input name="valorFechado" type="number" min="0" step="0.01" class="w-full mt-1 p-2 rounded-lg border" />
+            </div>
+            <div>
+              <label class="req text-sm">Status da venda</label>
+              <select name="status" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Aberta</option>
+                <option>Negociação</option>
+                <option>Fechado Ganho</option>
+                <option>Fechado Perdido</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm">Motivo da perda</label>
+              <select name="motivo" class="w-full mt-1 p-2 rounded-lg border">
+                <option value="">—</option>
+                <option>Valor</option>
+                <option>Tempo</option>
+                <option>Falta de confiança</option>
+                <option>Não respondeu</option>
+                <option>Outros</option>
+              </select>
+            </div>
+            <div>
+              <label class="req text-sm">Protocolo</label>
+              <select name="protocolo" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>MEP-6X</option>
+                <option>Atena</option>
+                <option>Apolo</option>
+                <option>Remodelação Glútea</option>
+                <option>Revita</option>
+              </select>
+            </div>
+            <div>
+              <label class="req text-sm">Canal de origem</label>
+              <select name="canal" class="w-full mt-1 p-2 rounded-lg border" required>
+                <option value="">– selecione –</option>
+                <option>Instagram Ads</option>
+                <option>Google Ads</option>
+                <option>Indicação</option>
+                <option>Orgânico</option>
+                <option>Outros</option>
+              </select>
+            </div>
+            <div class="md:col-span-2 flex gap-2">
+              <button class="btn btn-primary" type="submit">Salvar venda</button>
+              <button class="btn btn-ghost" type="reset">Limpar</button>
+              <p id="vendaMsg" class="text-sm ml-2"></p>
+            </div>
+          </form>
+        </div>
+        <div class="card overflow-x-auto">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xl font-semibold">Vendas / Propostas</h2>
+            <input id="vendaSearch" placeholder="Buscar…" class="p-2 rounded-lg border text-sm" />
+          </div>
+          <table class="table w-full">
+            <thead>
+              <tr>
+                <th>Proposta</th><th>Fechamento</th><th>Resp.</th><th>Status</th><th>Protocolo</th><th>Canal</th><th>R$ Fechado</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="vendaTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="tab-dashboard" class="tab-pane hidden">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-2">Indicadores-chave</h2>
+          <ul class="text-sm space-y-1">
+            <li>Leads (total): <strong id="kpiLeads">0</strong></li>
+            <li>Consultas agendadas: <strong id="kpiAgendadas">0</strong></li>
+            <li>Comparecimento (%): <strong id="kpiComparecimento">0%</strong></li>
+            <li>Taxa de fechamento (%): <strong id="kpiFechamento">0%</strong></li>
+            <li>Ticket médio (R$): <strong id="kpiTicket">0,00</strong></li>
+            <li>Receita total (R$): <strong id="kpiReceita">0,00</strong></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-2">Leads por Canal</h2>
+          <canvas id="chartCanais" height="180"></canvas>
+        </div>
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-2">Status do Funil (Leads)</h2>
+          <canvas id="chartStatus" height="180"></canvas>
+        </div>
+        <div class="card">
+          <h2 class="text-xl font-semibold mb-2">Receita por Responsável</h2>
+          <canvas id="chartResp" height="180"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Config -->
+    <section id="tab-config" class="tab-pane hidden">
+      <div class="card">
+        <h2 class="text-xl font-semibold mb-2">Configurações & Segurança</h2>
+        <p class="text-sm text-gray-600 mb-3">Este app armazena dados apenas no seu navegador (localStorage). Para ambiente multi-usuário, publique via GitHub Pages e incorpore via <code>&lt;iframe&gt;</code>. Exporte regularmente (JSON/CSV) e faça commit no repositório.</p>
+        <div class="flex flex-wrap gap-2">
+          <button id="btnBackup" class="btn btn-ghost">Gerar backup (JSON)</button>
+          <button id="btnWipe" class="btn danger">Apagar tudo (local)</button>
+        </div>
+        <p id="cfgMsg" class="text-sm mt-2"></p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /* -------------------- Infra de dados -------------------- */
+    const DB_KEY = 'ibh_comercial_v1';
+    const state = load();
+
+    function load(){
+      try{
+        const raw = localStorage.getItem(DB_KEY);
+        if(!raw) return { leads:[], consultas:[], vendas:[] };
+        const obj = JSON.parse(raw);
+        if(!obj.leads) obj.leads=[]; if(!obj.consultas) obj.consultas=[]; if(!obj.vendas) obj.vendas=[];
+        return obj;
+      }catch(e){ return { leads:[], consultas:[], vendas:[] } }
+    }
+    function save(){ localStorage.setItem(DB_KEY, JSON.stringify(state)); refreshAll(); }
+
+    /* -------------------- Utilidades -------------------- */
+    const fmt = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+    const el = sel => document.querySelector(sel);
+    function msg(node, text, ok=true){ node.textContent = text; node.className = ok ? 'ok text-sm' : 'danger text-sm'; setTimeout(()=> node.textContent='', 2000); }
+    function filterRows(rows, term){ term = term.toLowerCase(); return rows.filter(r=> JSON.stringify(r).toLowerCase().includes(term)); }
+
+    /* -------------------- Tabs -------------------- */
+    document.querySelectorAll('.tab').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        document.querySelectorAll('.tab').forEach(x=> x.classList.remove('btn-primary')); b.classList.add('btn-primary');
+        const t = b.dataset.tab;
+        document.querySelectorAll('.tab-pane').forEach(p=> p.classList.add('hidden'));
+        el(`#tab-${t}`).classList.remove('hidden');
+        if(t==='dashboard') buildDashboard();
+      })
+    });
+
+    /* -------------------- Leads -------------------- */
+    const leadForm = el('#formLead');
+    const leadTable = el('#leadTable');
+    const leadMsg = el('#leadMsg');
+    leadForm.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const fd = new FormData(leadForm);
+      const item = {
+        id: crypto.randomUUID(),
+        dataEntrada: fd.get('dataEntrada'),
+        nome: fd.get('nome')?.trim(),
+        cidade: fd.get('cidade'),
+        canal: fd.get('canal'),
+        nivel: fd.get('nivel'),
+        responsavel: fd.get('responsavel'),
+        status: fd.get('status'),
+        obs: (fd.get('obs')||'').trim()
+      };
+      if(!item.dataEntrada || !item.nome || !item.cidade || !item.canal || !item.nivel || !item.responsavel || !item.status){
+        return msg(leadMsg, 'Preencha todos os campos obrigatórios.', false);
+      }
+      state.leads.unshift(item); save(); leadForm.reset(); msg(leadMsg, 'Lead salvo.');
+    });
+    function renderLeads(term=''){
+      const rows = term ? filterRows(state.leads, term) : state.leads;
+      leadTable.innerHTML = rows.map(r=>`
+        <tr>
+          <td>${r.dataEntrada||''}</td>
+          <td>${escapeHtml(r.nome||'')}</td>
+          <td><span class="pill">${r.cidade||''}</span></td>
+          <td>${r.canal||''}</td>
+          <td>${r.nivel||''}</td>
+          <td>${r.responsavel||''}</td>
+          <td>${r.status||''}</td>
+          <td class="text-right"><button class="text-xs underline" onclick="delLead('${r.id}')">excluir</button></td>
+        </tr>`).join('');
+    }
+    function delLead(id){ state.leads = state.leads.filter(x=> x.id!==id); save(); }
+    el('#leadSearch').addEventListener('input', e=> renderLeads(e.target.value));
+
+    /* -------------------- Consultas -------------------- */
+    const consultaForm = el('#formConsulta');
+    const consultaTable = el('#consultaTable');
+    const consultaMsg = el('#consultaMsg');
+    consultaForm.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const fd = new FormData(consultaForm);
+      const item = {
+        id: crypto.randomUUID(),
+        dataAgendamento: fd.get('dataAgendamento'),
+        dataConsulta: fd.get('dataConsulta'),
+        medico: fd.get('medico'),
+        status: fd.get('status'),
+        motivo: fd.get('motivo')||'',
+        valorEstimado: parseFloat(fd.get('valorEstimado')||'0')||0,
+        obs: (fd.get('obs')||'').trim()
+      };
+      if(!item.dataAgendamento || !item.dataConsulta || !item.medico || !item.status){
+        return msg(consultaMsg, 'Preencha os campos obrigatórios.', false);
+      }
+      state.consultas.unshift(item); save(); consultaForm.reset(); msg(consultaMsg, 'Consulta salva.');
+    });
+    function renderConsultas(term=''){
+      const rows = term ? filterRows(state.consultas, term) : state.consultas;
+      consultaTable.innerHTML = rows.map(r=>`
+        <tr>
+          <td>${r.dataAgendamento||''}</td>
+          <td>${r.dataConsulta||''}</td>
+          <td>${r.medico||''}</td>
+          <td>${r.status||''}</td>
+          <td>${r.motivo||''}</td>
+          <td>${r.valorEstimado? fmt.format(r.valorEstimado): ''}</td>
+          <td class="text-right"><button class="text-xs underline" onclick="delConsulta('${r.id}')">excluir</button></td>
+        </tr>`).join('');
+    }
+    function delConsulta(id){ state.consultas = state.consultas.filter(x=> x.id!==id); save(); }
+    el('#consultaSearch').addEventListener('input', e=> renderConsultas(e.target.value));
+
+    /* -------------------- Vendas -------------------- */
+    const vendaForm = el('#formVenda');
+    const vendaTable = el('#vendaTable');
+    const vendaMsg = el('#vendaMsg');
+    vendaForm.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const fd = new FormData(vendaForm);
+      const item = {
+        id: crypto.randomUUID(),
+        dataProposta: fd.get('dataProposta'),
+        dataFechamento: fd.get('dataFechamento')||'',
+        responsavel: fd.get('responsavel'),
+        valorProposta: parseFloat(fd.get('valorProposta')||'0')||0,
+        valorFechado: parseFloat(fd.get('valorFechado')||'0')||0,
+        status: fd.get('status'),
+        motivo: fd.get('motivo')||'',
+        protocolo: fd.get('protocolo'),
+        canal: fd.get('canal')
+      };
+      if(!item.dataProposta || !item.responsavel || !item.status || !item.protocolo || !item.canal){
+        return msg(vendaMsg, 'Preencha os campos obrigatórios.', false);
+      }
+      state.vendas.unshift(item); save(); vendaForm.reset(); msg(vendaMsg, 'Venda/Proposta salva.');
+    });
+    function renderVendas(term=''){
+      const rows = term ? filterRows(state.vendas, term) : state.vendas;
+      vendaTable.innerHTML = rows.map(r=>`
+        <tr>
+          <td>${r.dataProposta||''}</td>
+          <td>${r.dataFechamento||''}</td>
+          <td>${r.responsavel||''}</td>
+          <td>${r.status||''}</td>
+          <td>${r.protocolo||''}</td>
+          <td>${r.canal||''}</td>
+          <td>${r.valorFechado? fmt.format(r.valorFechado): ''}</td>
+          <td class="text-right"><button class="text-xs underline" onclick="delVenda('${r.id}')">excluir</button></td>
+        </tr>`).join('');
+    }
+    function delVenda(id){ state.vendas = state.vendas.filter(x=> x.id!==id); save(); }
+    el('#vendaSearch').addEventListener('input', e=> renderVendas(e.target.value));
+
+    /* -------------------- Export / Import -------------------- */
+    el('#btnExportJSON').addEventListener('click', ()=> download('ibh_comercial.json', JSON.stringify(state, null, 2)) );
+    el('#btnExportCSV').addEventListener('click', ()=> {
+      const csv = csvExport();
+      download('ibh_comercial.csv', csv);
+    });
+    el('#btnBackup').addEventListener('click', ()=> download('backup_ibh.json', JSON.stringify(state, null, 2)) );
+    el('#btnWipe').addEventListener('click', ()=> { if(confirm('Confirmar exclusão total dos dados locais?')){ localStorage.removeItem(DB_KEY); location.reload(); } });
+    el('#fileImport').addEventListener('change', handleImport);
+
+    function csvExport(){
+      // Exporta 3 seções em um único CSV com marcadores
+      const rows=[];
+      rows.push(['#LEADS']);
+      rows.push(['dataEntrada','nome','cidade','canal','nivel','responsavel','status','obs']);
+      state.leads.forEach(r=> rows.push([r.dataEntrada,r.nome,r.cidade,r.canal,r.nivel,r.responsavel,r.status, (r.obs||'').replace(/\n/g,' ') ]));
+      rows.push(['#CONSULTAS']);
+      rows.push(['dataAgendamento','dataConsulta','medico','status','motivo','valorEstimado','obs']);
+      state.consultas.forEach(r=> rows.push([r.dataAgendamento,r.dataConsulta,r.medico,r.status,r.motivo,r.valorEstimado,(r.obs||'').replace(/\n/g,' ')]));
+      rows.push(['#VENDAS']);
+      rows.push(['dataProposta','dataFechamento','responsavel','valorProposta','valorFechado','status','motivo','protocolo','canal']);
+      state.vendas.forEach(r=> rows.push([r.dataProposta,r.dataFechamento,r.responsavel,r.valorProposta,r.valorFechado,r.status,r.motivo,r.protocolo,r.canal]));
+      return rows.map(r=> r.map(x=> (x===undefined||x===null)?'':String(x).includes(',')?`"${String(x).replaceAll('"','""')}"`:String(x)).join(',')).join('\n');
+    }
+    function handleImport(e){
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () =>{
+        const text = reader.result;
+        try{
+          if(file.name.endsWith('.json')){
+            const obj = JSON.parse(text);
+            if(obj.leads && obj.consultas && obj.vendas){ localStorage.setItem(DB_KEY, JSON.stringify(obj)); location.reload(); }
+            else alert('JSON inválido.');
+          }else{
+            // CSV simples com marcadores #LEADS / #CONSULTAS / #VENDAS
+            const lines = text.split(/\r?\n/).filter(x=>x.trim().length);
+            const sect = { cur:'' };
+            const tmp = { leads:[], consultas:[], vendas:[] };
+            for(let i=0;i<lines.length;i++){
+              const line = lines[i];
+              if(line.startsWith('#LEADS')){ sect.cur='L'; i++; /* skip header */ continue; }
+              if(line.startsWith('#CONSULTAS')){ sect.cur='C'; i++; continue; }
+              if(line.startsWith('#VENDAS')){ sect.cur='V'; i++; continue; }
+              const cols = parseCSVLine(line);
+              if(sect.cur==='L' && cols.length>=8){ tmp.leads.push({ id:crypto.randomUUID(), dataEntrada:cols[0], nome:cols[1], cidade:cols[2], canal:cols[3], nivel:cols[4], responsavel:cols[5], status:cols[6], obs:cols[7] }); }
+              if(sect.cur==='C' && cols.length>=7){ tmp.consultas.push({ id:crypto.randomUUID(), dataAgendamento:cols[0], dataConsulta:cols[1], medico:cols[2], status:cols[3], motivo:cols[4], valorEstimado:parseFloat(cols[5]||'0')||0, obs:cols[6] }); }
+              if(sect.cur==='V' && cols.length>=9){ tmp.vendas.push({ id:crypto.randomUUID(), dataProposta:cols[0], dataFechamento:cols[1], responsavel:cols[2], valorProposta:parseFloat(cols[3]||'0')||0, valorFechado:parseFloat(cols[4]||'0')||0, status:cols[5], motivo:cols[6], protocolo:cols[7], canal:cols[8] }); }
+            }
+            localStorage.setItem(DB_KEY, JSON.stringify(tmp)); location.reload();
+          }
+        }catch(err){ alert('Falha ao importar: '+ err.message); }
+      };
+      reader.readAsText(file);
+    }
+    function download(name, content){
+      const blob = new Blob([content], {type:'text/plain;charset=utf-8'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href);
+    }
+    function parseCSVLine(line){
+      const out=[]; let cur=''; let inQ=false; for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(ch==='"'){ if(inQ && line[i+1]==='"'){ cur+='"'; i++; } else { inQ=!inQ; } continue; }
+        if(ch===',' && !inQ){ out.push(cur); cur=''; continue; }
+        cur+=ch;
+      } out.push(cur); return out;
+    }
+
+    /* -------------------- Dashboard -------------------- */
+    let chartCanais, chartStatus, chartResp;
+    function buildDashboard(){
+      const leads = state.leads;
+      const consultas = state.consultas;
+      const vendas = state.vendas;
+      // KPIs
+      el('#kpiLeads').textContent = String(leads.length);
+      const agendadas = consultas.filter(c=> ['Confirmada','Compareceu','Remarcada'].includes(c.status)).length;
+      el('#kpiAgendadas').textContent = String(agendadas);
+      const compareceu = consultas.filter(c=> c.status==='Compareceu').length;
+      el('#kpiComparecimento').textContent = pct(compareceu, agendadas);
+      const fechadas = vendas.filter(v=> v.status==='Fechado Ganho').length;
+      el('#kpiFechamento').textContent = pct(fechadas, vendas.length || leads.length);
+      const receita = vendas.filter(v=> v.status==='Fechado Ganho').reduce((s,v)=> s + (v.valorFechado||0), 0);
+      el('#kpiReceita').textContent = fmt.format(receita);
+      const vendidos = vendas.filter(v=> v.status==='Fechado Ganho' && v.valorFechado>0).length;
+      el('#kpiTicket').textContent = vendidos? fmt.format(receita / vendidos) : '0,00';
+
+      // Gráficos
+      const ctx1 = document.getElementById('chartCanais').getContext('2d');
+      const ctx2 = document.getElementById('chartStatus').getContext('2d');
+      const ctx3 = document.getElementById('chartResp').getContext('2d');
+
+      const leadsPorCanal = groupCount(leads, 'canal');
+      const leadsPorStatus = groupCount(leads, 'status');
+      const receitaPorResp = groupSum(vendas.filter(v=> v.status==='Fechado Ganho'), 'responsavel', 'valorFechado');
+
+      chartCanais?.destroy();
+      chartStatus?.destroy();
+      chartResp?.destroy();
+      chartCanais = new Chart(ctx1, { type:'doughnut', data: toChartData(leadsPorCanal), options:{ plugins:{ legend:{ position:'bottom' }}}});
+      chartStatus = new Chart(ctx2, { type:'bar', data: toChartData(leadsPorStatus), options:{ plugins:{ legend:{ display:false }}}});
+      chartResp = new Chart(ctx3, { type:'bar', data: toChartData(receitaPorResp), options:{ plugins:{ legend:{ display:false }}}});
+    }
+    function groupCount(arr, key){
+      const m={}; arr.forEach(o=>{ const k=o[key]||'—'; m[k]=(m[k]||0)+1; }); return m;
+    }
+    function groupSum(arr, key, field){
+      const m={}; arr.forEach(o=>{ const k=o[key]||'—'; const v=Number(o[field]||0); m[k]=(m[k]||0)+v; }); return m;
+    }
+    function toChartData(mapObj){
+      const labels = Object.keys(mapObj);
+      const data = Object.values(mapObj);
+      return { labels, datasets:[{ label:'', data }] };
+    }
+    function pct(a,b){ if(!b) return '0%'; return ( (a/b)*100 ).toFixed(1)+'%'; }
+
+    /* -------------------- Tabelas + segurança básica -------------------- */
+    function escapeHtml(str){ return (str||'').replace(/[&<>"]/g, s=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]) ); }
+
+    function refreshAll(){ renderLeads(el('#leadSearch').value||''); renderConsultas(el('#consultaSearch').value||''); renderVendas(el('#vendaSearch').value||''); buildDashboard(); }
+    // Inicializa
+    refreshAll();
+  </script>
+</body>
+</html>
